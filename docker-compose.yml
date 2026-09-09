@@ -1,6 +1,6 @@
 services:
   gamebox:
-    image: ${ROMM_IMAGE:-rommapp/romm:5.2.0}
+    image: ${ROMM_IMAGE:-rommapp/romm:5.1.0}
     container_name: gamebox
     restart: unless-stopped
     depends_on:
@@ -20,7 +20,7 @@ services:
     ports:
       - "${ROMM_PORT:-6767}:8080"
     volumes:
-      # Structure A: the parent of ./roms is mounted here.
+      # Structure A: ./roms is discovered as /romm/library/roms.
       - .:/romm/library
       - ${ROMM_DATA_DIR:-./data/romm}:/romm/assets
       - ${ROMM_RESOURCES_DIR:-./data/resources}:/romm/resources
