@@ -1,7 +1,5 @@
 # GameBox local configuration
-#
-# This file is mounted into /romm/config/config.yml.
-# Keep this configuration small so RomM defaults remain upgrade-safe.
+# Mounted as /romm/config/config.yml
 
 filesystem:
   roms_folder: "roms"
@@ -24,14 +22,11 @@ emulatorjs:
   cache_limit: null
   disable_batch_bootup: false
   disable_auto_unload: false
+  # Strict offline mode: current RomM EmulatorJS Netplay can load assets from
+  # the public nightly CDN, so Netplay is disabled in the baseline profile.
+  # Multiplayer on one browser/host keyboard does not require Netplay.
   netplay:
-    # Enabled for testing on the isolated LAN. Do not assume every core/game
-    # supports multiplayer; see docs/offline.md.
-    enabled: true
-    # No public STUN/TURN servers are configured here because this installation
-    # must not depend on the Internet. Same-LAN WebRTC connectivity is tested
-    # directly between browsers.
-  controls:
-    # P1: WASD + J/K/U/I + Enter/Shift
-    # P2: arrows + numpad-style keys where the browser reports them.
-    # Users can override mappings from EmulatorJS Menu -> Controls.
+    enabled: false
+
+  # Per-game/player keyboard mappings are intentionally configured from the
+  # EmulatorJS Controls menu; browser keyboard names vary by layout.
