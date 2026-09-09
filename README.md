@@ -26,7 +26,7 @@ http://192.168.1.50:6767
 - One searchable library instead of launching individual emulators.
 - Closed-LAN operation after the offline bundle has been prepared.
 
-RomM currently provides EmulatorJS browser emulation for systems including NES, SNES, Game Boy/Color/Advance, Nintendo 64, PlayStation, Genesis/Mega Drive, arcade/MAME and MS-DOS, with exact compatibility depending on the core and game. citehttps://docs.romm.app/latest/Platforms-and-Players/EmulatorJS-Player/
+RomM provides EmulatorJS browser emulation for many retro systems, including NES, SNES, Game Boy/Color/Advance, Nintendo 64, PlayStation, Genesis/Mega Drive, arcade/MAME and MS-DOS. Exact compatibility depends on the core and game.
 
 ## ROM library
 
@@ -45,11 +45,11 @@ roms/
 └── dos/
 ```
 
-ZIP archives are supported by RomM's ROM scanning workflow for supported formats. Do not commit ROMs or firmware to this Git repository; `.gitignore` excludes them.
+ZIP archives are supported for supported ROM formats. Do not commit ROMs or firmware to this Git repository; `.gitignore` excludes them.
 
 ## Keyboard multiplayer
 
-The baseline GameBox profile deliberately keeps EmulatorJS Netplay disabled. Current RomM documentation notes that Netplay can load some assets from the public nightly CDN, which conflicts with a strict no-Internet runtime. citehttps://docs.romm.app/latest/Platforms-and-Players/EmulatorJS-Player/
+The baseline GameBox profile deliberately keeps EmulatorJS Netplay disabled. Current RomM documentation notes that Netplay can load some assets from the public nightly CDN, which conflicts with a strict no-Internet runtime.
 
 Instead, multiplayer on one machine uses the emulator's multiple player inputs and a shared keyboard. See `docs/keyboard.md`.
 
@@ -65,7 +65,7 @@ Install Docker, clone this repository and run:
 bash scripts/prepare-offline.sh
 ```
 
-This pulls the pinned-by-environment images and creates `offline/gamebox-images.tar`.
+This pulls the pinned images and creates `offline/gamebox-images.tar`.
 
 Before doing this, create a unique secret:
 
@@ -101,6 +101,4 @@ Automatic metadata/artwork providers normally require Internet access. For a clo
 
 ## Current status
 
-The repository now contains the initial offline stack, port 6767 configuration, local RomM config, ROM directory layout, keyboard guidance, and USB image import/export scripts.
-
-The remaining validation milestone is to build the offline bundle on a connected staging machine, disconnect it, and verify game boot, saves, ZIP scanning, and same-browser multiplayer before deploying it to the production LAN.
+The repository contains the offline stack, port 6767 configuration, local RomM config, ROM directory layout, keyboard guidance, and USB image import/export scripts. The final validation step is to build the bundle on a connected staging machine, disconnect it, and verify game boot, saves, ZIP scanning and same-browser multiplayer before production deployment.
