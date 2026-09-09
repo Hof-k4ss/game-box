@@ -1,0 +1,28 @@
+# Local environment
+.env
+.env.*
+!.env.example
+
+# ROMs and firmware are local assets, not repository content
+roms/**/*
+!roms/README.md
+bios/**/*
+
+# Runtime data
+saves/
+states/
+config/runtime/
+backups/
+
+# Offline bundles can be very large
+*.tar
+*.tar.gz
+*.tar.zst
+*.zip
+*.img
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
