@@ -1,0 +1,57 @@
+services:
+  gamebox:
+    image: ${ROMM_IMAGE:-rommapp/romm:latest}
+    container_name: gamebox
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      valkey:
+        condition: service_started
+    environment:
+      DB_HOST: mariadb
+      DB_NAME: ${DB_NAME:-romm}
+      DB_USER: ${DB_USER:-romm}
+      DB_PASSWD: ${DB_PASSWORD:-change-me}
+      REDIS_HOST: valkey
+      ROMM_AUTH_SECRET_KEY: ${ROMM_AUTH_SECRET_KEY:-change-this-secret}
+      ROMM_BASE_URL: ${ROMM_BASE_URL:-http://localhost:8080}
+      ROMM_PORT: 8080
+    ports:
+      - "${ROMM_PORT:-8080}:8080"
+    volumes:
+      - ${ROMM_LIBRARY_DIR:-./roms}:/romm/library
+      - ${ROMM_DATA_DIR:-./data/romm}:/romm/assets
+      - ${ROMM_RESOURCES_DIR:-./data/resources}:/romm/resources
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  mariadb:
+    image: ${MARIADB_IMAGE:-mariadb:11}
+    container_name: gamebox-db
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${DB_NAME:-romm}
+      MARIADB_USER: ${DB_USER:-romm}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-change-me}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-change-me-root}
+    volumes:
+      - ./data/mariadb:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  valkey:
+    image: ${VALKEY_IMAGE:-valkey/valkey:8}
+    container_name: gamebox-valkey
+    restart: unless-stopped
+    command: ["valkey-server", "--save", "60", "1"]
+    volumes:
+      - ./data/valkey:/data
