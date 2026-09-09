@@ -1,67 +1,106 @@
-# GameBox
+# 🎮 GameBox
 
 Offline-first retro gaming box for a closed LAN.
 
-GameBox is designed for an Ubuntu machine with Docker, no Internet access at runtime, and a single browser UI for browsing and launching a personal game library.
+GameBox turns an Ubuntu machine into a small browser-based arcade: open one web page, pick a game, and play with the keyboard. The runtime is designed not to require Internet access.
 
-## Goals
+## 🌐 Web interface
 
-- One web interface for a large local game library.
-- Keyboard-first play.
-- Local saves and save states.
-- LAN multiplayer where the selected emulator/core supports it.
-- No runtime dependency on the public Internet.
-- Easy offline export/import so the whole stack can be moved by USB.
-
-## Important scope
-
-GameBox does **not** ship commercial ROMs, BIOS files, or other copyrighted game content. Put only game files and firmware you are legally entitled to use in the local library.
-
-The repository contains the infrastructure, configuration, automation, and documentation needed to run the box.
-
-## Architecture
-
-The first implementation uses RomM as the game-library and browser-play foundation, with MariaDB for metadata and Valkey for background-task state. RomM exposes the game library and EmulatorJS-backed browser emulation through one web application.
-
-The compose stack is intentionally configured for local operation. Metadata-provider credentials are optional and are not required for the basic offline library workflow.
-
-## Project layout
+The GameBox host exposes RomM on **TCP port 6767**:
 
 ```text
-.
-├── docker-compose.yml
-├── .env.example
-├── .gitignore
-├── README.md
-├── roms/
-│   └── README.md
-├── scripts/
-│   ├── prepare-offline.sh
-│   ├── export-offline.sh
-│   └── import-offline.sh
-└── docs/
-    └── offline.md
+http://<GAMEBOX-IP>:6767
 ```
 
-## Supported library families
+Example:
 
-The exact playable set depends on the emulator cores included by the selected RomM/EmulatorJS release and on the files in the local library. The project is intended to cover common systems such as NES, SNES, Game Boy/Color/Advance, Mega Drive/Genesis, Nintendo 64, PlayStation, PSP, arcade/MAME-compatible titles, and DOS-class software where browser emulation supports the title.
+```text
+http://192.168.1.50:6767
+```
 
-## Multiplayer
+## What it is for
 
-LAN multiplayer is treated as a feature to validate rather than something this project blindly promises. Emulator compatibility, browser input behavior, and the current netplay implementation vary by platform/core. The first milestone will verify local single-player operation offline, then test multiplayer on the isolated LAN and document the working combinations.
+- Solo retro games in the browser.
+- Same-browser local multiplayer with multiple keyboard mappings where the emulator/core supports it.
+- Local saves and save states.
+- One searchable library instead of launching individual emulators.
+- Closed-LAN operation after the offline bundle has been prepared.
 
-## Offline workflow
+RomM currently provides EmulatorJS browser emulation for systems including NES, SNES, Game Boy/Color/Advance, Nintendo 64, PlayStation, Genesis/Mega Drive, arcade/MAME and MS-DOS, with exact compatibility depending on the core and game. citehttps://docs.romm.app/latest/Platforms-and-Players/EmulatorJS-Player/
 
-1. On an Internet-connected preparation machine, pull/build the required Docker images and cache every runtime asset needed by the chosen configuration.
-2. Export the images and GameBox configuration into an offline bundle.
-3. Move the bundle to the isolated Ubuntu machine by USB.
-4. Import the images and start the compose stack.
-5. Add your legally obtained game files under `roms/` and run the library scan.
-6. Open the GameBox web UI from another machine on the LAN.
+## ROM library
 
-See `docs/offline.md` for the detailed procedure.
+Put your own legally obtained game files under `roms/`:
 
-## Status
+```text
+roms/
+├── nes/
+├── snes/
+├── gb/
+├── gbc/
+├── gba/
+├── n64/
+├── genesis/
+├── arcade/
+└── dos/
+```
 
-Initial repository bootstrap. The next commits will add the compose stack, offline packaging scripts, library layout, and then the LAN/netplay validation layer.
+ZIP archives are supported by RomM's ROM scanning workflow for supported formats. Do not commit ROMs or firmware to this Git repository; `.gitignore` excludes them.
+
+## Keyboard multiplayer
+
+The baseline GameBox profile deliberately keeps EmulatorJS Netplay disabled. Current RomM documentation notes that Netplay can load some assets from the public nightly CDN, which conflicts with a strict no-Internet runtime. citehttps://docs.romm.app/latest/Platforms-and-Players/EmulatorJS-Player/
+
+Instead, multiplayer on one machine uses the emulator's multiple player inputs and a shared keyboard. See `docs/keyboard.md`.
+
+This is suitable for games such as Bomberman, fighting games, beat-'em-ups, party games and some racing games. N64 multiplayer, including Mario Kart 64, must be tested per game/core. Worms Armageddon is not a baseline browser-supported title; a compatible Worms release on a supported platform/core can be tested separately.
+
+## 100% offline workflow
+
+### 1. Connected preparation machine
+
+Install Docker, clone this repository and run:
+
+```bash
+bash scripts/prepare-offline.sh
+```
+
+This pulls the pinned-by-environment images and creates `offline/gamebox-images.tar`.
+
+Before doing this, create a unique secret:
+
+```bash
+openssl rand -hex 32
+```
+
+Put the result in `.env` as `ROMM_AUTH_SECRET_KEY`.
+
+### 2. Transfer by USB
+
+Copy the repository and the offline image bundle to the isolated Ubuntu machine.
+
+Copy your game library into `roms/`.
+
+### 3. Start offline
+
+```bash
+bash scripts/import-offline.sh
+```
+
+Then open:
+
+```text
+http://<GAMEBOX-IP>:6767
+```
+
+No public Internet connection is needed at runtime for the baseline browser-emulation stack. The offline bundle must be prepared and tested before disconnecting the preparation machine.
+
+## Metadata and artwork
+
+Automatic metadata/artwork providers normally require Internet access. For a closed LAN, prepare metadata while connected or use local metadata/import files. Playing local ROMs does not require an online account with a metadata provider.
+
+## Current status
+
+The repository now contains the initial offline stack, port 6767 configuration, local RomM config, ROM directory layout, keyboard guidance, and USB image import/export scripts.
+
+The remaining validation milestone is to build the offline bundle on a connected staging machine, disconnect it, and verify game boot, saves, ZIP scanning, and same-browser multiplayer before deploying it to the production LAN.
