@@ -48,10 +48,10 @@ Le script vérifie Docker, crée les dossiers nécessaires et prépare `.env`.
 Ouvre `.env` et modifie cette ligne :
 
 ```dotenv
-ROM_SOURCE_DIR=/home/TON_UTILISATEUR/Téléchargements/ROMs
+ROM_SOURCE_DIR=/home/USER/downloads/ROMs
 ```
 
-Tu peux utiliser n'importe quel dossier.
+Remplace `USER` par ton nom d'utilisateur Linux, ou indique n'importe quel autre dossier contenant tes ROMs.
 
 ### 3. Démarrer GameBox
 
