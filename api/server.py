@@ -9,27 +9,26 @@ ROMS_DIR = Path(os.environ.get("ROMS_DIR", "/srv/roms"))
 PORT = 8000
 
 SYSTEMS = {
-    "arcade": "Arcade",
-    "nes": "NES",
-    "snes": "SNES",
-    "gb": "Game Boy",
-    "gbc": "Game Boy Color",
-    "gba": "Game Boy Advance",
-    "n64": "Nintendo 64",
-    "genesis": "Mega Drive / Genesis",
-    "segaMD": "Mega Drive / Genesis",
-    "psx": "PlayStation",
-    "nds": "Nintendo DS",
-    "psp": "PSP",
-    "dos": "MS-DOS",
-    "sms": "Master System",
-    "gg": "Game Gear",
-    "pce": "PC Engine",
-    "atari2600": "Atari 2600",
-    "atari7800": "Atari 7800",
-    "amiga": "Amiga",
-    "c64": "Commodore 64",
-    "_a_trier": "À trier",
+    "arcade": ("Arcade", "arcade"),
+    "nes": ("NES", "nes"),
+    "snes": ("SNES", "snes"),
+    "gb": ("Game Boy", "gb"),
+    "gbc": ("Game Boy Color", "gbc"),
+    "gba": ("Game Boy Advance", "gba"),
+    "n64": ("Nintendo 64", "n64"),
+    "genesis": ("Mega Drive / Genesis", "segaMD"),
+    "psx": ("PlayStation", "psx"),
+    "nds": ("Nintendo DS", "nds"),
+    "psp": ("PSP", "psp"),
+    "dos": ("MS-DOS", "dosbox_pure"),
+    "sms": ("Master System", "segaMS"),
+    "gg": ("Game Gear", "segaGG"),
+    "pce": ("PC Engine", "pce"),
+    "atari2600": ("Atari 2600", "atari2600"),
+    "atari7800": ("Atari 7800", "atari7800"),
+    "amiga": ("Amiga", "amiga"),
+    "c64": ("Commodore 64", "c64"),
+    "_a_trier": ("À trier", ""),
 }
 
 SUPPORTED_FILES = {
@@ -46,7 +45,8 @@ _cache_lock = threading.Lock()
 def system_from_path(path: Path):
     rel = path.relative_to(ROMS_DIR)
     folder = rel.parts[0] if rel.parts else "_a_trier"
-    return folder, SYSTEMS.get(folder, folder.replace("_", " ").title())
+    label, core = SYSTEMS.get(folder, (folder.replace("_", " ").title(), folder))
+    return folder, label, core
 
 
 def scan_games():
@@ -60,15 +60,16 @@ def scan_games():
         if path.suffix.lower() not in SUPPORTED_FILES:
             continue
         try:
-            system, label = system_from_path(path)
+            system, label, core = system_from_path(path)
             rel = path.relative_to(ROMS_DIR).as_posix()
             games.append({
                 "id": rel,
                 "name": path.stem,
                 "file": rel,
-                "url": "/roms/" + "/".join(part.replace(" ", "%20") for part in rel.split("/")),
+                "url": "/roms/" + "/".join(part for part in rel.split("/")),
                 "system": system,
                 "systemLabel": label,
+                "core": core,
                 "size": path.stat().st_size,
             })
         except (OSError, ValueError):
@@ -79,7 +80,6 @@ def scan_games():
 
 
 def get_games():
-    # Short cache avoids walking a very large ROM library for every UI action.
     import time
     now = time.time()
     with _cache_lock:
