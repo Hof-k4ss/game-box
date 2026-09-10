@@ -30,20 +30,33 @@
     if (!gameUrl) location.href = '/';
     document.getElementById('title').textContent = name;
 
+    let gameId = 2166136261;
+    for (const char of `${core}:${gameUrl}`) {
+      gameId ^= char.charCodeAt(0);
+      gameId = Math.imul(gameId, 16777619);
+    }
+    gameId = Math.abs(gameId >>> 0) || 1;
+
     EJS_player = '#game';
     EJS_core = core;
     EJS_gameUrl = gameUrl;
     EJS_gameName = name;
+    EJS_gameID = gameId;
     EJS_pathtodata = '/emulator/data/';
     EJS_language = 'fr-FR';
+    EJS_browserMode = 'desktop';
     EJS_startOnLoaded = false;
     EJS_fullscreenOnLoaded = false;
-    EJS_threads = true;
+
+    // Performance: use threaded WASM when the browser exposes SharedArrayBuffer.
+    EJS_threads = typeof SharedArrayBuffer !== 'undefined';
     EJS_cacheConfig = {
       enabled: true,
       cacheMaxSizeMB: 4096,
       cacheMaxAgeMins: 7200
     };
+    EJS_controlScheme = core;
+    EJS_askBeforeExit = false;
     EJS_disableAutoUnload = false;
     EJS_volume = 0.85;
   </script>
