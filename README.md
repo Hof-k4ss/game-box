@@ -102,7 +102,7 @@ http://IP_DU_PC:6767
 ./gamebox start          # démarrer
 ./gamebox stop           # arrêter
 ./gamebox restart        # redémarrer
-a./gamebox status        # voir l'état
+./gamebox status         # voir l'état
 ./gamebox logs           # voir les logs
 ./gamebox import         # classer les ROMs
 ./gamebox import-dry-run # simuler le classement
