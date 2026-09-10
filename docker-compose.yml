@@ -1,59 +1,49 @@
 services:
-  gamebox:
-    image: ${ROMM_IMAGE:-rommapp/romm:5.1.0}
-    container_name: gamebox
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gamebox-web
     restart: unless-stopped
     depends_on:
-      mariadb:
-        condition: service_healthy
-      valkey:
-        condition: service_started
-    environment:
-      DB_HOST: mariadb
-      DB_NAME: ${DB_NAME:-romm}
-      DB_USER: ${DB_USER:-romm}
-      DB_PASSWD: ${DB_PASSWORD:-change-me}
-      REDIS_HOST: valkey
-      ROMM_AUTH_SECRET_KEY: ${ROMM_AUTH_SECRET_KEY:-change-this-secret}
-      ROMM_BASE_URL: ${ROMM_BASE_URL:-http://localhost:6767}
-      ROMM_PORT: 8080
+      - api
     ports:
-      - "${ROMM_PORT:-6767}:8080"
+      - "${GAMEBOX_PORT:-6767}:80"
     volumes:
-      # Structure A: ./roms is discovered as /romm/library/roms.
-      - .:/romm/library
-      - ${ROMM_DATA_DIR:-./data/romm}:/romm/assets
-      - ${ROMM_RESOURCES_DIR:-./data/resources}:/romm/resources
-      - ${ROMM_CONFIG_DIR:-./config}:/romm/config
+      - ${ROMS_DIR:-./roms}:/srv/roms:ro
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080 || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/health || exit 1"]
+      interval: 20s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 20s
 
-  mariadb:
-    image: ${MARIADB_IMAGE:-mariadb:11}
-    container_name: gamebox-db
+  api:
+    build:
+      context: ./api
+    container_name: gamebox-api
     restart: unless-stopped
     environment:
-      MARIADB_DATABASE: ${DB_NAME:-romm}
-      MARIADB_USER: ${DB_USER:-romm}
-      MARIADB_PASSWORD: ${DB_PASSWORD:-change-me}
-      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-change-me-root}
+      ROMS_DIR: /srv/roms
+      BIOS_DIR: /srv/bios
     volumes:
-      - ./data/mariadb:/var/lib/mysql
+      - ${ROMS_DIR:-./roms}:/srv/roms:ro
+      - ${BIOS_DIR:-./bios}:/srv/bios:ro
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 10s
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)\" || exit 1"]
+      interval: 20s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      retries: 5
+      start_period: 10s
 
-  valkey:
-    image: ${VALKEY_IMAGE:-valkey/valkey:8}
-    container_name: gamebox-valkey
-    restart: unless-stopped
-    command: ["valkey-server", "--save", "60", "1"]
+  importer:
+    build:
+      context: ./importer
+    profiles: ["tools"]
+    environment:
+      SOURCE_DIR: /source
+      ROMS_DIR: /srv/roms
+      DRY_RUN: ${IMPORT_DRY_RUN:-false}
     volumes:
-      - ./data/valkey:/data
+      - ${ROM_SOURCE_DIR:-./incoming}:/source:ro
+      - ${ROMS_DIR:-./roms}:/srv/roms
