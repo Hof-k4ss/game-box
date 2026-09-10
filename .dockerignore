@@ -1,0 +1,12 @@
+.git
+.gitignore
+.env
+roms
+bios
+data
+saves
+states
+backups
+offline
+incoming
+README.md
