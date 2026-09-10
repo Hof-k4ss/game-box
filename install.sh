@@ -20,7 +20,7 @@ if [[ ! -f .env ]]; then
   echo "✅ .env créé."
   echo ""
   echo "👉 Ouvre maintenant .env et indique le dossier où se trouvent tes ROMs."
-  echo "   Exemple : $HOME/Téléchargements/ROMs"
+  echo "   Exemple : /home/USER/downloads/ROMs"
   echo ""
 fi
 
