@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>GameBox</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="brand">GAME<span>BOX</span></div>
+      <div class="subtitle">Borne rétro locale</div>
+    </div>
+    <div class="status" id="status">Chargement…</div>
+  </header>
+
+  <main>
+    <section class="toolbar">
+      <input id="search" type="search" placeholder="Rechercher un jeu…" autocomplete="off">
+      <div id="systems" class="systems"></div>
+    </section>
+
+    <section class="hero">
+      <div>
+        <h1>Choisis ton jeu</h1>
+        <p id="summary">Bibliothèque locale GameBox</p>
+      </div>
+      <button id="refresh" class="button">Actualiser</button>
+    </section>
+
+    <section id="games" class="games" aria-live="polite"></section>
+    <div id="empty" class="empty" hidden>Aucun jeu ne correspond à ta recherche.</div>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
