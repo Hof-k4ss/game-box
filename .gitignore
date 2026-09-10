@@ -1,27 +1,27 @@
-# Local environment
+# Configuration locale
 .env
 .env.*
 !.env.example
 
-# ROMs and firmware are local assets, not repository content
-roms/**/*
-!roms/README.md
-bios/**/*
+# Bibliothèque de jeux et BIOS : jamais dans Git
+roms/*
+bios/*
+!roms/.keep
+!bios/.keep
 
-# Runtime data
+# Données runtime
 saves/
 states/
-config/runtime/
+data/
 backups/
 
-# Offline bundles can be very large
+# Archives et images générées
 *.tar
 *.tar.gz
 *.tar.zst
-*.zip
 *.img
 
-# OS/editor noise
+# OS / éditeur
 .DS_Store
 Thumbs.db
 .vscode/
