@@ -46,6 +46,7 @@ ARCHIVE_SUFFIXES = {".zip", ".7z", ".rar"}
 CANDIDATE_SUFFIXES = ARCHIVE_SUFFIXES | {suffix for values in EXTENSIONS.values() for suffix in values} | {".iso", ".cue"}
 ARCADE_EXTENSIONS = {".bin", ".rom", ".u1", ".u2", ".u3", ".u4", ".u5", ".u6", ".u7", ".u8", ".ic1", ".ic2", ".ic3", ".ic4"}
 ARCADE_NAME_PATTERNS = re.compile(r"(?:[-_.](?:p1|p2|s1|m1|c1|c2|c3|c4|v1|v2|u1|u2|u3|u4|u5|u6|u7|u8))(?:[-_.]|$)", re.I)
+SATURN_TITLE_HINTS = {"sonic r", "sonic 3d blast", "panzer dragoon", "virtua fighter", "virtua cop"}
 
 
 def clean_name(value):
@@ -151,10 +152,13 @@ def detect_disc_signature(data):
 
 
 def filename_hint(path):
-    name = path.stem.lower()
+    name = clean_name(path.stem).lower()
     if re.search(r"\b(psp|playstation portable)\b", name):
         return "psp"
     if re.search(r"\b(sega[ _-]?saturn|saturn)\b", name):
+        return "saturn"
+    normalized = re.sub(r"[^a-z0-9]+", " ", name).strip()
+    if normalized in SATURN_TITLE_HINTS:
         return "saturn"
     return None
 
@@ -219,7 +223,7 @@ def detect_system(path):
     except Exception as exc:
         hint = filename_hint(path)
         if hint:
-            return None, 0, f"archive endommagée — système probable : {DISPLAY.get(hint, hint)} ({exc})"
+            return hint, 70, f"système probable d’après le titre du jeu — archive à vérifier : {exc}"
         return None, 0, f"lecture archive impossible : {exc}"
 
     names = [name for name, _ in members]
