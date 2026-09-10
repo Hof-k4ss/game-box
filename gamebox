@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
+if [[ ! -f .env ]]; then
+  echo "Premier démarrage : création de .env depuis .env.example"
+  cp .env.example .env
+  echo "👉 Ouvre .env et vérifie ROM_SOURCE_DIR avant de relancer."
+  exit 0
+fi
+
+case "${1:-help}" in
+  start)
+    docker compose up -d --build
+    echo "GameBox est disponible sur http://localhost:${GAMEBOX_PORT:-6767}"
+    ;;
+  stop)
+    docker compose down
+    ;;
+  restart)
+    docker compose restart
+    ;;
+  status)
+    docker compose ps
+    ;;
+  logs)
+    docker compose logs -f --tail=100
+    ;;
+  import)
+    docker compose --profile tools run --rm importer
+    ;;
+  import-dry-run)
+    IMPORT_DRY_RUN=true docker compose --profile tools run --rm importer
+    ;;
+  build)
+    docker compose build --pull
+    ;;
+  help|*)
+    cat <<'EOF'
+GameBox
+
+  ./gamebox start          Démarrer la borne
+  ./gamebox stop           Arrêter la borne
+  ./gamebox restart        Redémarrer les conteneurs
+  ./gamebox status         Voir l'état
+  ./gamebox logs           Afficher les logs
+  ./gamebox import         Analyser et classer les ROMs
+  ./gamebox import-dry-run Simuler le classement sans déplacer les fichiers
+  ./gamebox build          Reconstruire les images
+EOF
+    ;;
+esac
