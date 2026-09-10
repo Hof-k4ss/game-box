@@ -41,6 +41,8 @@ DISPLAY = {
 }
 
 IGNORED_SUFFIXES = {".txt", ".nfo", ".jpg", ".jpeg", ".png", ".gif", ".sfv", ".md", ".db"}
+ARCHIVE_SUFFIXES = {".zip", ".7z"}
+CANDIDATE_SUFFIXES = ARCHIVE_SUFFIXES | {suffix for values in EXTENSIONS.values() for suffix in values}
 ARCADE_EXTENSIONS = {".bin", ".rom", ".u1", ".u2", ".u3", ".u4", ".u5", ".u6", ".u7", ".u8", ".ic1", ".ic2", ".ic3", ".ic4"}
 ARCADE_NAME_PATTERNS = re.compile(r"(?:[-_.](?:p1|p2|s1|m1|c1|c2|c3|c4|v1|v2|u1|u2|u3|u4|u5|u6|u7|u8))(?:[-_.]|$)", re.I)
 
@@ -108,17 +110,13 @@ def detect_magic(path, member):
 
 
 def looks_like_arcade(path, names, meaningful):
-    if path.suffix.lower() not in {".zip", ".7z"} or len(names) < 3:
+    if path.suffix.lower() not in ARCHIVE_SUFFIXES or len(names) < 3:
         return False
-    lower = " ".join(names).lower()
     explicit = ("neogeo", "pgm", "mame", "fbneo", "fba", "arcade")
     if any(marker in path.stem.lower() for marker in explicit):
         return True
     arcade_suffix_count = sum(1 for suffix in meaningful if suffix in ARCADE_EXTENSIONS)
     patterned_names = sum(1 for name in names if ARCADE_NAME_PATTERNS.search(name))
-    # Arcade sets normally contain several chip dumps in one archive. We only
-    # classify here when the internal structure looks like a romset rather than
-    # a generic multi-file console/disc archive.
     return arcade_suffix_count >= 2 and (patterned_names >= 1 or arcade_suffix_count >= 3)
 
 
@@ -167,11 +165,20 @@ def main():
         return 2
     ROMS.mkdir(parents=True, exist_ok=True)
 
-    files = [p for p in SOURCE.rglob("*") if p.is_file() and not p.name.startswith(".")]
+    files = [
+        p for p in SOURCE.rglob("*")
+        if p.is_file() and not p.name.startswith(".") and p.suffix.lower() in CANDIDATE_SUFFIXES
+    ]
+    skipped = [
+        p for p in SOURCE.rglob("*")
+        if p.is_file() and not p.name.startswith(".") and p.suffix.lower() not in CANDIDATE_SUFFIXES
+    ]
+
     print("\n🎮 GameBox — import des ROMs")
     print(f"Source : {SOURCE}")
     print(f"Destination : {ROMS}")
-    print(f"Mode : {'SIMULATION' if DRY_RUN else 'IMPORT'}\n")
+    print(f"Mode : {'SIMULATION' if DRY_RUN else 'IMPORT'}")
+    print(f"Fichiers ignorés (non-ROM) : {len(skipped)}\n")
 
     counts = {}
     unknown = []
@@ -198,7 +205,7 @@ def main():
 
     print("\nRésumé")
     print("-------")
-    print(f"Fichiers examinés : {len(files)}")
+    print(f"Fichiers ROM examinés : {len(files)}")
     print(f"Classés : {moved}")
     print(f"À vérifier : {len(unknown)}")
     for system, count in sorted(counts.items()):
