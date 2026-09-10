@@ -40,8 +40,8 @@ DISPLAY = {
     "atari7800": "Atari 7800", "amiga": "Amiga", "c64": "Commodore 64",
 }
 
-IGNORED_SUFFIXES = {".txt", ".nfo", ".jpg", ".jpeg", ".png", ".gif", ".sfv", ".md", ".db"}
-ARCHIVE_SUFFIXES = {".zip", ".7z"}
+IGNORED_SUFFIXES = {".txt", ".nfo", ".jpg", ".jpeg", ".png", ".gif", ".sfv", ".md", ".db", ".html", ".htm"}
+ARCHIVE_SUFFIXES = {".zip", ".7z", ".rar"}
 CANDIDATE_SUFFIXES = ARCHIVE_SUFFIXES | {suffix for values in EXTENSIONS.values() for suffix in values}
 ARCADE_EXTENSIONS = {".bin", ".rom", ".u1", ".u2", ".u3", ".u4", ".u5", ".u6", ".u7", ".u8", ".ic1", ".ic2", ".ic3", ".ic4"}
 ARCADE_NAME_PATTERNS = re.compile(r"(?:[-_.](?:p1|p2|s1|m1|c1|c2|c3|c4|v1|v2|u1|u2|u3|u4|u5|u6|u7|u8))(?:[-_.]|$)", re.I)
@@ -53,29 +53,51 @@ def clean_name(value):
 
 def read_zip_members(path):
     with zipfile.ZipFile(path) as archive:
-        return [(info.filename, b"") for info in archive.infolist() if not info.is_dir()]
+        return [(info.filename, "zip") for info in archive.infolist() if not info.is_dir()]
 
 
 def read_7z_members(path):
     result = subprocess.run(["7z", "l", "-slt", str(path)], capture_output=True, text=True, check=False)
     if result.returncode != 0:
-        raise RuntimeError(result.stderr.strip() or "7z n'a pas pu lire l'archive")
+        message = result.stderr.strip() or result.stdout.strip() or "7z n'a pas pu lire l'archive"
+        raise RuntimeError(message)
     members = []
     for line in result.stdout.splitlines():
         if line.startswith("Path = "):
             current = line[7:]
             if current not in {str(path), ""}:
-                members.append((current, b""))
+                members.append((current, "7z"))
     return members
 
 
 def member_names(path):
+    """Lit une archive en se fiant au contenu réel, pas seulement à son extension."""
     suffix = path.suffix.lower()
-    if suffix == ".zip":
-        return read_zip_members(path)
+    errors = []
+
+    readers = [read_zip_members, read_7z_members]
     if suffix == ".7z":
-        return read_7z_members(path)
-    return [(path.name, b"")]
+        readers = [read_7z_members, read_zip_members]
+    elif suffix == ".rar":
+        readers = [read_7z_members, read_zip_members]
+    elif suffix == ".zip":
+        readers = [read_zip_members, read_7z_members]
+
+    for reader in readers:
+        try:
+            members = reader(path)
+            if members:
+                actual = members[0][1]
+                expected = suffix.lstrip(".")
+                note = ""
+                if expected in {"zip", "7z"} and actual != expected:
+                    note = f" — archive détectée comme {actual.upper()} malgré l'extension .{expected}"
+                return members, note
+        except Exception as exc:
+            errors.append(str(exc))
+
+    detail = errors[-1] if errors else "format inconnu"
+    raise RuntimeError(detail)
 
 
 def score_extensions(names):
@@ -92,9 +114,7 @@ def score_extensions(names):
     return scores, meaningful
 
 
-def detect_magic(path, member):
-    if path.suffix.lower() != ".zip":
-        return None
+def detect_zip_magic(path, member):
     try:
         with zipfile.ZipFile(path) as archive:
             with archive.open(member) as stream:
@@ -122,30 +142,33 @@ def looks_like_arcade(path, names, meaningful):
 
 def detect_system(path):
     try:
-        members = member_names(path)
+        members, archive_note = member_names(path)
     except Exception as exc:
         return None, 0, f"lecture archive impossible : {exc}"
 
     names = [name for name, _ in members]
     scores, meaningful = score_extensions(names)
+    extension_summary = ", ".join(sorted(set(meaningful))) or "aucune"
 
     ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)
     if ranked[0][1] > 0:
         best, best_score = ranked[0]
         second_score = ranked[1][1] if len(ranked) > 1 else 0
         if best_score >= 1 and best_score > second_score:
-            return best, 100, f"extension(s) interne(s) : {', '.join(sorted(set(meaningful)))}"
+            return best, 100, f"extension(s) interne(s) : {extension_summary}{archive_note}"
 
-    if path.suffix.lower() == ".zip":
-        for name, _ in members[:20]:
-            system = detect_magic(path, name)
+    if any(kind == "zip" for _, kind in members):
+        for name, kind in members[:20]:
+            if kind != "zip":
+                continue
+            system = detect_zip_magic(path, name)
             if system:
-                return system, 95, f"signature interne détectée dans {name}"
+                return system, 95, f"signature interne détectée dans {name}{archive_note}"
 
     if looks_like_arcade(path, names, meaningful):
-        return "arcade", 85, "structure interne ressemblant à un ROMset arcade"
+        return "arcade", 85, f"structure interne ressemblant à un ROMset arcade{archive_note}"
 
-    return None, 0, f"aucune signature/extension suffisamment fiable ({', '.join(sorted(set(meaningful)) or ['aucune'])})"
+    return None, 0, f"aucune signature/extension suffisamment fiable ({extension_summary}){archive_note}"
 
 
 def destination_for(system, source_name):
