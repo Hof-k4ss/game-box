@@ -40,8 +40,9 @@ DISPLAY = {
     "atari7800": "Atari 7800", "amiga": "Amiga", "c64": "Commodore 64",
 }
 
-ARCHIVE_SUFFIXES = {".zip", ".7z"}
 IGNORED_SUFFIXES = {".txt", ".nfo", ".jpg", ".jpeg", ".png", ".gif", ".sfv", ".md", ".db"}
+ARCADE_EXTENSIONS = {".bin", ".rom", ".u1", ".u2", ".u3", ".u4", ".u5", ".u6", ".u7", ".u8", ".ic1", ".ic2", ".ic3", ".ic4"}
+ARCADE_NAME_PATTERNS = re.compile(r"(?:[-_.](?:p1|p2|s1|m1|c1|c2|c3|c4|v1|v2|u1|u2|u3|u4|u5|u6|u7|u8))(?:[-_.]|$)", re.I)
 
 
 def clean_name(value):
@@ -58,7 +59,6 @@ def read_7z_members(path):
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or "7z n'a pas pu lire l'archive")
     members = []
-    current = None
     for line in result.stdout.splitlines():
         if line.startswith("Path = "):
             current = line[7:]
@@ -91,54 +91,61 @@ def score_extensions(names):
 
 
 def detect_magic(path, member):
-    """Small set of strong signatures used when a member has no useful extension."""
-    if path.suffix.lower() == ".zip":
-        try:
-            with zipfile.ZipFile(path) as archive:
-                with archive.open(member) as stream:
-                    data = stream.read(512)
-        except Exception:
-            return None
-    else:
+    if path.suffix.lower() != ".zip":
+        return None
+    try:
+        with zipfile.ZipFile(path) as archive:
+            with archive.open(member) as stream:
+                data = stream.read(512)
+    except Exception:
         return None
 
     if data[:4] == b"NES\x1a":
         return "nes"
-    if len(data) >= 0x104 and data[0x104:0x108] == bytes.fromhex("ce ed 66 66"):
+    if len(data) >= 0x108 and data[0x104:0x108] == bytes.fromhex("ce ed 66 66"):
         return "gb"
     return None
+
+
+def looks_like_arcade(path, names, meaningful):
+    if path.suffix.lower() not in {".zip", ".7z"} or len(names) < 3:
+        return False
+    lower = " ".join(names).lower()
+    explicit = ("neogeo", "pgm", "mame", "fbneo", "fba", "arcade")
+    if any(marker in path.stem.lower() for marker in explicit):
+        return True
+    arcade_suffix_count = sum(1 for suffix in meaningful if suffix in ARCADE_EXTENSIONS)
+    patterned_names = sum(1 for name in names if ARCADE_NAME_PATTERNS.search(name))
+    # Arcade sets normally contain several chip dumps in one archive. We only
+    # classify here when the internal structure looks like a romset rather than
+    # a generic multi-file console/disc archive.
+    return arcade_suffix_count >= 2 and (patterned_names >= 1 or arcade_suffix_count >= 3)
 
 
 def detect_system(path):
     try:
         members = member_names(path)
     except Exception as exc:
-        return None, 0, f"lecture archive impossible: {exc}"
+        return None, 0, f"lecture archive impossible : {exc}"
 
     names = [name for name, _ in members]
     scores, meaningful = score_extensions(names)
 
-    # Strong direct match: one system clearly dominates the archive.
     ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)
     if ranked[0][1] > 0:
         best, best_score = ranked[0]
         second_score = ranked[1][1] if len(ranked) > 1 else 0
         if best_score >= 1 and best_score > second_score:
-            return best, 100, f"extension(s) interne(s): {', '.join(sorted(set(meaningful)))}"
+            return best, 100, f"extension(s) interne(s) : {', '.join(sorted(set(meaningful)))}"
 
-    # Check a small number of member headers for ZIP archives.
     if path.suffix.lower() == ".zip":
         for name, _ in members[:20]:
             system = detect_magic(path, name)
             if system:
                 return system, 95, f"signature interne détectée dans {name}"
 
-    # Arcade archives intentionally remain conservative. Arcade ROMsets often
-    # contain files such as .bin/.rom with no unique console extension.
-    lower = " ".join(names).lower()
-    arcade_markers = ("neogeo", "pgm", "mame", "fbneo", "fba", "arcade")
-    if any(marker in path.stem.lower() for marker in arcade_markers) or any(marker in lower for marker in arcade_markers):
-        return "arcade", 75, "indices arcade dans l'archive"
+    if looks_like_arcade(path, names, meaningful):
+        return "arcade", 85, "structure interne ressemblant à un ROMset arcade"
 
     return None, 0, f"aucune signature/extension suffisamment fiable ({', '.join(sorted(set(meaningful)) or ['aucune'])})"
 
@@ -161,7 +168,7 @@ def main():
     ROMS.mkdir(parents=True, exist_ok=True)
 
     files = [p for p in SOURCE.rglob("*") if p.is_file() and not p.name.startswith(".")]
-    print(f"\n🎮 GameBox — import des ROMs")
+    print("\n🎮 GameBox — import des ROMs")
     print(f"Source : {SOURCE}")
     print(f"Destination : {ROMS}")
     print(f"Mode : {'SIMULATION' if DRY_RUN else 'IMPORT'}\n")
