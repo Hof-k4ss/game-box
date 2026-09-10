@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>GameBox — Jeu</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    html, body { background:#000; overflow:hidden; }
+    body { margin:0; }
+    #game { width:100vw; height:100vh; }
+    .player-bar { position:fixed; z-index:1000; top:10px; left:10px; right:10px; display:flex; align-items:center; justify-content:space-between; gap:10px; pointer-events:none; }
+    .player-bar > * { pointer-events:auto; }
+    .game-title { max-width:70vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; background:rgba(10,10,15,.82); border:1px solid rgba(255,255,255,.12); padding:8px 12px; border-radius:10px; }
+    .back { text-decoration:none; }
+  </style>
+</head>
+<body>
+  <div class="player-bar">
+    <div class="game-title" id="title">GameBox</div>
+    <a class="button back" href="/">← Bibliothèque</a>
+  </div>
+  <div id="game"></div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const gameUrl = params.get('rom');
+    const core = params.get('core') || 'nes';
+    const name = params.get('name') || 'GameBox';
+    if (!gameUrl) location.href = '/';
+    document.getElementById('title').textContent = name;
+
+    EJS_player = '#game';
+    EJS_core = core;
+    EJS_gameUrl = gameUrl;
+    EJS_gameName = name;
+    EJS_pathtodata = '/emulator/data/';
+    EJS_language = 'fr-FR';
+    EJS_startOnLoaded = false;
+    EJS_fullscreenOnLoaded = false;
+    EJS_threads = true;
+    EJS_cacheConfig = {
+      enabled: true,
+      cacheMaxSizeMB: 4096,
+      cacheMaxAgeMins: 7200
+    };
+    EJS_disableAutoUnload = false;
+    EJS_volume = 0.85;
+  </script>
+  <script src="/emulator/data/loader.js"></script>
+</body>
+</html>
