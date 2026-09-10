@@ -1,0 +1,48 @@
+:root {
+  color-scheme: dark;
+  --bg: #090b10;
+  --panel: #11151d;
+  --panel2: #171c26;
+  --text: #f3f5f8;
+  --muted: #8f98a8;
+  --accent: #70e000;
+  --border: rgba(255,255,255,.09);
+}
+* { box-sizing: border-box; }
+html, body { margin:0; min-height:100%; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+body { background: radial-gradient(circle at 50% -10%, #1d2431 0, var(--bg) 42%); }
+button, input { font:inherit; }
+.topbar { height:74px; padding:12px 24px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); background:rgba(9,11,16,.9); position:sticky; top:0; z-index:10; backdrop-filter:blur(8px); }
+.brand { font-weight:950; letter-spacing:.12em; font-size:1.35rem; }
+.brand span { color:var(--accent); }
+.subtitle { color:var(--muted); font-size:.76rem; }
+.status { color:#aeb7c5; font-size:.85rem; }
+main { max-width:1500px; margin:auto; padding:22px 24px 60px; }
+.toolbar { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+#search { flex:1 1 300px; min-width:220px; padding:13px 16px; color:var(--text); background:var(--panel); border:1px solid var(--border); border-radius:12px; outline:none; }
+#search:focus { border-color:rgba(112,224,0,.55); }
+.systems { display:flex; gap:8px; flex-wrap:wrap; }
+.system { border:1px solid var(--border); background:var(--panel); color:#cbd2dd; border-radius:999px; padding:9px 12px; cursor:pointer; }
+.system:hover, .system.active { border-color:rgba(112,224,0,.55); color:white; background:#172015; }
+.system small { color:var(--muted); margin-left:4px; }
+.hero { display:flex; justify-content:space-between; align-items:end; gap:20px; margin:28px 0 18px; }
+h1 { margin:0 0 5px; font-size:clamp(1.7rem,3vw,2.6rem); }
+p { margin:0; color:var(--muted); }
+.button { border:1px solid var(--border); background:var(--panel2); color:var(--text); padding:10px 14px; border-radius:10px; cursor:pointer; }
+.button:hover { border-color:rgba(112,224,0,.55); }
+.games { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:14px; }
+.game-card { min-width:0; text-align:left; padding:0 0 12px; background:var(--panel); border:1px solid var(--border); border-radius:14px; color:var(--text); overflow:hidden; cursor:pointer; transition:transform .12s ease,border-color .12s ease; }
+.game-card:hover, .game-card:focus-visible { transform:translateY(-2px); border-color:rgba(112,224,0,.55); outline:none; }
+.cover { aspect-ratio:4/3; display:flex; align-items:flex-end; padding:12px; background:linear-gradient(145deg,#28313d,#11151d); }
+.cover.nes { background:linear-gradient(145deg,#8c2430,#27131a); }
+.cover.snes { background:linear-gradient(145deg,#5b3a87,#191322); }
+.cover.n64 { background:linear-gradient(145deg,#315e8b,#111a27); }
+.cover.gb,.cover.gbc,.cover.gba { background:linear-gradient(145deg,#47733d,#131c12); }
+.cover.genesis { background:linear-gradient(145deg,#7c5a2d,#211a10); }
+.cover.arcade { background:linear-gradient(145deg,#8b2e65,#20101b); }
+.cover span { font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:rgba(255,255,255,.72); }
+.game-name { padding:11px 12px 2px; font-weight:750; line-height:1.25; }
+.game-system { padding:0 12px; color:var(--muted); font-size:.78rem; }
+.empty,.error { padding:40px; text-align:center; color:var(--muted); }
+.error { background:var(--panel); border:1px solid var(--border); border-radius:12px; }
+@media (max-width:700px) { .topbar { padding:10px 14px; } main { padding:16px 14px 40px; } .hero { align-items:start; } .games { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; } }
